@@ -259,7 +259,7 @@ func TestLeafNodeHttpProxyConfigWarnings(t *testing.T) {
 		warningMatch  string
 	}{
 		{
-			name: "proxy with only TCP URLs",
+			name: "proxy with only TCP URLs - now supported",
 			config: `
 				leafnodes {
 					remotes = [
@@ -272,11 +272,10 @@ func TestLeafNodeHttpProxyConfigWarnings(t *testing.T) {
 					]
 				}
 			`,
-			expectWarning: true,
-			warningMatch:  "proxy configuration will be ignored",
+			expectWarning: false, // No longer generates warnings
 		},
 		{
-			name: "proxy with mixed TCP and WebSocket URLs",
+			name: "proxy with mixed TCP and WebSocket URLs - now supported",
 			config: `
 				leafnodes {
 					remotes = [
@@ -289,8 +288,7 @@ func TestLeafNodeHttpProxyConfigWarnings(t *testing.T) {
 					]
 				}
 			`,
-			expectWarning: true,
-			warningMatch:  "proxy configuration will only be used for WebSocket URLs",
+			expectWarning: false, // No longer generates warnings
 		},
 		{
 			name: "proxy with only WebSocket URLs",
@@ -377,6 +375,50 @@ func TestLeafNodeHttpProxyConnection(t *testing.T) {
 			]
 		}
 	`, hubOpts.Websocket.Port, proxy.url())
+
+	configFile := createConfFile(t, []byte(configContent))
+
+	spoke, _ := RunServerWithConfig(configFile)
+	defer spoke.Shutdown()
+
+	// Verify leafnode connections are established
+	checkLeafNodeConnected(t, spoke)
+	checkLeafNodeConnected(t, hub)
+}
+
+func TestLeafNodeHttpProxyConnectionTCP(t *testing.T) {
+	// Create a hub server with regular TCP leafnode support
+	hubConfig := createConfFile(t, []byte(`
+		listen: "127.0.0.1:-1"
+		leafnodes {
+			listen: "127.0.0.1:-1"
+		}
+	`))
+
+	hub, hubOpts := RunServerWithConfig(hubConfig)
+	defer hub.Shutdown()
+
+	// Create HTTP proxy
+	proxy := createTestHTTPProxy(_EMPTY_, _EMPTY_)
+	proxy.start()
+	defer proxy.stop()
+
+	// Create spoke server with proxy configuration for TCP connection via config file
+	configContent := fmt.Sprintf(`
+		listen: "127.0.0.1:-1"
+		leafnodes {
+			reconnect_interval: "50ms"
+			remotes = [
+				{
+					url: "nats://127.0.0.1:%d"
+					proxy {
+						url: "%s"
+						timeout: 5s
+					}
+				}
+			]
+		}
+	`, hubOpts.LeafNode.Port, proxy.url())
 
 	configFile := createConfFile(t, []byte(configContent))
 

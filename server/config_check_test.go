@@ -2404,7 +2404,7 @@ func TestConfigCheck(t *testing.T) {
 				leafnodes {
 					remotes = [
 						{
-							url: "ws://127.0.0.1:7422"
+							url: "nats://127.0.0.1:7422"
 							proxy {
 								url: "ftp://proxy.example.com:8080"
 							}
@@ -2422,7 +2422,7 @@ func TestConfigCheck(t *testing.T) {
 				leafnodes {
 					remotes = [
 						{
-							url: "ws://127.0.0.1:7422"
+							url: "nats://127.0.0.1:7422"
 							proxy {
 								url: "http://"
 							}
@@ -2440,7 +2440,7 @@ func TestConfigCheck(t *testing.T) {
 				leafnodes {
 					remotes = [
 						{
-							url: "ws://127.0.0.1:7422"
+							url: "nats://127.0.0.1:7422"
 							proxy {
 								url: "http://proxy.example.com:8080"
 								username: "testuser"
@@ -2459,7 +2459,7 @@ func TestConfigCheck(t *testing.T) {
 				leafnodes {
 					remotes = [
 						{
-							url: "ws://127.0.0.1:7422"
+							url: "nats://127.0.0.1:7422"
 							proxy {
 								url: "http://proxy.example.com:8080"
 								password: "testpass"

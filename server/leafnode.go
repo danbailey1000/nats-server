@@ -399,25 +399,11 @@ func validateLeafNodeProxyOptions(remote *RemoteLeafOpts) ([]string, error) {
 	}
 
 	if len(remote.URLs) > 0 {
-		hasWebSocketURL := false
-		hasNonWebSocketURL := false
-
 		for _, remoteURL := range remote.URLs {
-			if remoteURL.Scheme == wsSchemePrefix || remoteURL.Scheme == wsSchemePrefixTLS {
-				hasWebSocketURL = true
-				if (remoteURL.Scheme == wsSchemePrefixTLS) &&
-					remote.TLSConfig == nil && !remote.TLS {
-					return warnings, fmt.Errorf("proxy is configured but remote URL %s requires TLS and no TLS configuration is provided. When using proxy with TLS endpoints, ensure TLS is properly configured for the leafnode remote", remoteURL.String())
-				}
-			} else {
-				hasNonWebSocketURL = true
+			if (remoteURL.Scheme == wsSchemePrefixTLS) &&
+				remote.TLSConfig == nil && !remote.TLS {
+				return warnings, fmt.Errorf("proxy is configured but remote URL %s requires TLS and no TLS configuration is provided. When using proxy with TLS endpoints, ensure TLS is properly configured for the leafnode remote", remoteURL.String())
 			}
-		}
-
-		if !hasWebSocketURL {
-			warnings = append(warnings, "proxy configuration will be ignored: proxy settings only apply to WebSocket connections (ws:// or wss://), but all configured URLs use TCP connections (nats://)")
-		} else if hasNonWebSocketURL {
-			warnings = append(warnings, "proxy configuration will only be used for WebSocket URLs: proxy settings do not apply to TCP connections (nats://)")
 		}
 	}
 
@@ -752,15 +738,19 @@ func (s *Server) connectToRemoteLeafNode(remote *leafNodeCfg, firstConnect bool)
 			} else {
 				s.Debugf("Trying to connect as leafnode to remote server on %q%s", rURL.Host, ipStr)
 
-				// Check if proxy is configured first, then check if URL supports it
-				if proxyURL != _EMPTY_ && isWSURL(rURL) {
-					// Use proxy for WebSocket connections - use original hostname, resolved IP for connection
+				// Check if proxy is configured
+				if proxyURL != _EMPTY_ {
+					// Use proxy for connection - use original hostname, resolved IP for connection
 					targetHost := rURL.Host
 					// If URL doesn't include port, add the default port for the scheme
 					if rURL.Port() == _EMPTY_ {
-						defaultPort := "80"
-						if rURL.Scheme == wsSchemePrefixTLS {
+						defaultPort := "4222" // Default NATS port
+						if rURL.Scheme == "tls" || rURL.Scheme == "nats+tls" {
+							defaultPort = "4222" // NATS TLS still uses 4222 by default
+						} else if rURL.Scheme == wsSchemePrefixTLS {
 							defaultPort = "443"
+						} else if rURL.Scheme == wsSchemePrefix {
+							defaultPort = "80"
 						}
 						targetHost = net.JoinHostPort(rURL.Hostname(), defaultPort)
 					}

@@ -241,7 +241,7 @@ type RemoteLeafOpts struct {
 		NoMasking   bool `json:"-"`
 	}
 
-	// HTTP Proxy configuration for WebSocket connections
+	// HTTP Proxy configuration for leafnode connections
 	Proxy struct {
 		// URL of the HTTP proxy server (e.g., "http://proxy.example.com:8080")
 		URL string `json:"-"`
